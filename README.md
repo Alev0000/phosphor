@@ -1,3 +1,19 @@
+# Phosphor: NTSCRT for After Effects
+
+**This repository is a fork of [ntsc-rs](https://github.com/ntsc-rs/ntsc-rs) that adds Phosphor**, an After Effects effect
+that reproduces [NTSCRT](https://github.com/finnmckenty/NTSCRT) by Finn McKenty: digital video, NTSC/VHS signal,
+downscale, TV/VCR glitches, CRT shaders and Screen Loop feedback, with NTSCRT's looks built in.
+
+- About Phosphor, install and build: [crates/phosphor-ae/README.md](crates/phosphor-ae/README.md)
+- Tutorial de instalação (português): [crates/phosphor-ae/INSTALAR.md](crates/phosphor-ae/INSTALAR.md)
+- Credits: [crates/phosphor-ae/CREDITS.md](crates/phosphor-ae/CREDITS.md)
+
+> **Vibecoded:** Phosphor was written with AI (Claude Code) for an author who is not a programmer. Free and open source, shared as-is.
+
+Everything below is ntsc-rs's own README.
+
+---
+
 <p align="center">
     <a href="https://ntsc.rs">
         <picture>
