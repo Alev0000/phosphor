@@ -15,11 +15,11 @@ requests are welcome; expect the rough edges of a project made this way.
 - **[NTSCRT](https://github.com/finnmckenty/NTSCRT)** by **Finn McKenty**: the macOS app Phosphor
   reproduces. Its pipeline (Digital Video → NTSC → Downscale → Glitch → CRT, plus Screen Loop), its
   Digital Video codec, its Glitch receiver, its Screen Loop video feedback, its 27 looks and 5 Screen
-  Loop presets and its default settings were all designed by Finn. Phosphor ports them from Swift
-  and Metal to Rust and Direct3D 11, and ships the looks and presets inside the plugin.
+  Loop presets and its default settings are Finn's work. Phosphor ports them from Swift and Metal to
+  Rust and Direct3D 11, and ships the looks and presets inside the plugin.
 
-  NTSCRT was announced by its author as free and open source, but its repository has no license
-  file yet (checked November 2026). The parts of Phosphor ported from NTSCRT remain his work.
+  NTSCRT is MIT-licensed, Copyright (c) 2026 Finn McKenty. Its license text ships with Phosphor in
+  `LICENSES/NTSCRT-MIT.txt`.
 
 ## The signal
 
@@ -48,11 +48,13 @@ requests are welcome; expect the rough edges of a project made this way.
 
   GPL text: `LICENSES/GPL-2.0.txt`. The shaders are separate files the plugin loads at run time.
 
-## The glitches
+## The glitches and the codec
 
 - **analogtv** by **Trevor Blackwell**, from **[XScreenSaver](https://www.jwz.org/xscreensaver/)**
   (Jamie Zawinski): the design NTSCRT's Glitch stage follows, glitches as the response of simulated
-  TV circuits.
+  TV circuits. NTSCRT's receiver (and so Phosphor's) is its own code, written from that design.
+- The Digital Video codec quantizes with the reference tables of the **JPEG standard** (ITU-T T.81,
+  Annex K).
 
 ## Building blocks
 
@@ -70,5 +72,5 @@ requests are welcome; expect the rough edges of a project made this way.
 ## Phosphor's own code
 
 The code written for Phosphor (`crates/phosphor-core`, `crates/phosphor-ae`) is offered under
-**MIT OR ISC OR Apache-2.0**, the same terms as ntsc-rs, except for the parts ported from NTSCRT,
-which follow whatever license Finn McKenty gives NTSCRT.
+**MIT OR ISC OR Apache-2.0**, the same terms as ntsc-rs. The parts ported from NTSCRT are under
+NTSCRT's MIT license, Copyright (c) 2026 Finn McKenty (`LICENSES/NTSCRT-MIT.txt`).

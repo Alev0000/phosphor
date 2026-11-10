@@ -52,6 +52,6 @@ from slang-shaders by `cargo run -p phosphor-core --release --example gen_crt_pa
 
 ## License
 
-Phosphor's own code: MIT OR ISC OR Apache-2.0. The parts ported from NTSCRT remain Finn McKenty's
-work, under whatever license he gives NTSCRT (its repository has no license file yet). ntsc-rs,
-librashader and the shaders keep their own licenses: see [CREDITS.md](CREDITS.md).
+Phosphor's own code: MIT OR ISC OR Apache-2.0. The parts ported from NTSCRT are under NTSCRT's MIT
+license, Copyright (c) 2026 Finn McKenty ([LICENSES/NTSCRT-MIT.txt](LICENSES/NTSCRT-MIT.txt)).
+ntsc-rs, librashader and the shaders keep their own licenses: see [CREDITS.md](CREDITS.md).
