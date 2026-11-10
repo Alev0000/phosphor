@@ -489,7 +489,7 @@ impl AdobePluginGlobal for Plugin {
             }
             Command::About => {
                 out_data.set_return_msg(&format!(
-                    "Phosphor {}.{}.{}\r\rAnalog video, from the camera to the tube: digital video, NTSC/VHS signal, downscale, TV and VCR glitches, CRT shaders and screen feedback.\r\rA port of NTSCRT by Finn McKenty. NTSC signal by ntsc-rs (valadaptive). CRT shaders from libretro/slang-shaders (TroggleMonkey, EasyMode, Hyllian, J. Kyle Pittman, Themaister) via librashader (Ronny Chan). Glitch receiver after analogtv by Trevor Blackwell.\r\rVibecoded: written with AI (Claude Code) by a non-programmer. Free and open source; see CREDITS.md next to the plugin.",
+                    "Phosphor {}.{}.{}\r\rAnalog video, from the camera to the tube: digital video, NTSC/VHS signal, downscale, TV and VCR glitches, CRT shaders and screen feedback.\r\rA port of NTSCRT by Finn McKenty. NTSC signal by ntsc-rs (valadaptive). CRT shaders from libretro/slang-shaders (TroggleMonkey, EasyMode, Hyllian, J. Kyle Pittman, Themaister) via librashader (Ronny Chan). Glitch receiver after analogtv by Trevor Blackwell.\r\rVibecoded: written with AI by a non-programmer. Free and open source; see CREDITS.md next to the plugin.",
                     env!("EFFECT_VERSION_MAJOR"),
                     env!("EFFECT_VERSION_MINOR"),
                     env!("EFFECT_VERSION_PATCH")

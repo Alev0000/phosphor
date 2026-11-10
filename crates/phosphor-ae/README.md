@@ -9,7 +9,7 @@ layer → Digital Video (camera + codec) → NTSC/VHS signal (ntsc-rs) → Downs
                                    + Screen Loop (a camera filming its own TV)
 ```
 
-> **Vibecoded.** Phosphor was written by an AI (Claude, through Claude Code) for an author who is
+> **Vibecoded.** Phosphor was written by AI for an author who is
 > not a programmer, then tested in After Effects. It is free and open source, shared as-is.
 > Everything hard in it is other people's work: see **[CREDITS.md](CREDITS.md)**.
 

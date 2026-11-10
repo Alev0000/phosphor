@@ -5,8 +5,8 @@ by the people below. Phosphor itself is the glue: it puts their work inside an A
 
 ## Made with AI (vibecoded)
 
-**Phosphor was vibecoded.** Its author is not a programmer: the code was written by an AI
-(Anthropic's Claude, through Claude Code), directed, tested and checked in After Effects by a human.
+**Phosphor was vibecoded.** Its author is not a programmer: the code was written by AI,
+directed, tested and checked in After Effects by a human.
 It is shared as-is, in the open, so anyone can read it, fix it and improve it. Bug reports and pull
 requests are welcome; expect the rough edges of a project made this way.
 

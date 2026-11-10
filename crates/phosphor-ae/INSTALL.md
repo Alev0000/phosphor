@@ -4,7 +4,7 @@ Phosphor is an After Effects effect that makes any footage look like analog TV: 
 NTSC/VHS signal, TV and VCR glitches, a tube screen (CRT) and the "camera filming its own TV"
 tunnel. It is an After Effects version of the **NTSCRT** app by Finn McKenty.
 
-> **Vibecoded.** The code was written by an AI (Claude, through Claude Code) for an author who is
+> **Vibecoded.** The code was written by AI for an author who is
 > not a programmer, and tested in After Effects. It is free and open source. Everyone who did the
 > hard parts is credited in `CREDITS.md`.
 

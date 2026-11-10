@@ -9,7 +9,7 @@ downscale, TV/VCR glitches, CRT shaders and Screen Loop feedback, with NTSCRT's 
 - Step-by-step install guide: [crates/phosphor-ae/INSTALL.md](crates/phosphor-ae/INSTALL.md)
 - Credits: [crates/phosphor-ae/CREDITS.md](crates/phosphor-ae/CREDITS.md)
 
-> **Vibecoded:** Phosphor was written with AI (Claude Code) for an author who is not a programmer. Free and open source, shared as-is.
+> **Vibecoded:** Phosphor was written with AI for an author who is not a programmer. Free and open source, shared as-is.
 
 Everything below is ntsc-rs's own README.
 
