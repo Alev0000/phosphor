@@ -6,7 +6,7 @@ downscale, TV/VCR glitches, CRT shaders and Screen Loop feedback, with NTSCRT's 
 
 - **Download:** [releases/latest](https://github.com/Alev0000/phosphor/releases/latest) (Windows, After Effects)
 - About Phosphor, install and build: [crates/phosphor-ae/README.md](crates/phosphor-ae/README.md)
-- Tutorial de instalação (português): [crates/phosphor-ae/INSTALAR.md](crates/phosphor-ae/INSTALAR.md)
+- Step-by-step install guide: [crates/phosphor-ae/INSTALL.md](crates/phosphor-ae/INSTALL.md)
 - Credits: [crates/phosphor-ae/CREDITS.md](crates/phosphor-ae/CREDITS.md)
 
 > **Vibecoded:** Phosphor was written with AI (Claude Code) for an author who is not a programmer. Free and open source, shared as-is.

@@ -36,7 +36,7 @@ Windows 10/11, 64-bit, After Effects (tested on 2026; recent versions should wor
    `C:\Program Files\Adobe\Common\Plug-ins\7.0\MediaCore\` (Windows asks for administrator permission).
 4. Open After Effects: **Effect › Stylize › Phosphor**.
 
-Step-by-step guide in Portuguese: [INSTALAR.md](INSTALAR.md).
+Step-by-step guide with troubleshooting: [INSTALL.md](INSTALL.md).
 
 ## Build
 
