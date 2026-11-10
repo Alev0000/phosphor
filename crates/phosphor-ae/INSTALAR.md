@@ -23,9 +23,12 @@ digital, sinal NTSC/VHS, glitches de TV e videocassete, tela de tubo (CRT) e o t
 
 Com ele aberto, o Windows não deixa copiar o plugin.
 
-### 2. Pegue a pasta `Phosphor`
+### 2. Baixe e descompacte o Phosphor
 
-Dentro dela devem estar:
+Baixe o `Phosphor-...-windows.zip` da página de downloads:
+https://github.com/Alev0000/phosphor/releases/latest
+
+Clique com o botão direito no zip › **Extrair Tudo…**. Sai uma pasta `Phosphor`; dentro dela devem estar:
 
 ```
 Phosphor\

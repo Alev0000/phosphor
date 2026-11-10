@@ -4,6 +4,7 @@
 that reproduces [NTSCRT](https://github.com/finnmckenty/NTSCRT) by Finn McKenty: digital video, NTSC/VHS signal,
 downscale, TV/VCR glitches, CRT shaders and Screen Loop feedback, with NTSCRT's looks built in.
 
+- **Download:** [releases/latest](https://github.com/Alev0000/phosphor/releases/latest) (Windows, After Effects)
 - About Phosphor, install and build: [crates/phosphor-ae/README.md](crates/phosphor-ae/README.md)
 - Tutorial de instalação (português): [crates/phosphor-ae/INSTALAR.md](crates/phosphor-ae/INSTALAR.md)
 - Credits: [crates/phosphor-ae/CREDITS.md](crates/phosphor-ae/CREDITS.md)

@@ -30,10 +30,11 @@ layer → Digital Video (camera + codec) → NTSC/VHS signal (ntsc-rs) → Downs
 
 Windows 10/11, 64-bit, After Effects (tested on 2026; recent versions should work), a Direct3D 11 graphics card.
 
-1. Close After Effects.
-2. Copy the `Phosphor` folder (with `Phosphor.aex`, `shaders\` and `LICENSES\` inside) to
+1. Download `Phosphor-...-windows.zip` from the [releases page](https://github.com/Alev0000/phosphor/releases/latest) and unzip it.
+2. Close After Effects.
+3. Copy the `Phosphor` folder (with `Phosphor.aex`, `shaders\` and `LICENSES\` inside) to
    `C:\Program Files\Adobe\Common\Plug-ins\7.0\MediaCore\` (Windows asks for administrator permission).
-3. Open After Effects: **Effect › Stylize › Phosphor**.
+4. Open After Effects: **Effect › Stylize › Phosphor**.
 
 Step-by-step guide in Portuguese: [INSTALAR.md](INSTALAR.md).
 
