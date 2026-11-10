@@ -1,0 +1,26 @@
+[package]
+name = "phosphor-ae"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR ISC OR Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[target.'cfg(windows)'.dependencies]
+after-effects = { git = "https://github.com/virtualritz/after-effects", rev = "0e0b197" }
+premiere = { git = "https://github.com/virtualritz/after-effects", rev = "0e0b197" }
+ntsc-rs = { path = "../ntscrs" }
+phosphor-core = { path = "../phosphor-core" }
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_System_LibraryLoader"] }
+
+[build-dependencies]
+pipl = { git = "https://github.com/virtualritz/after-effects", rev = "0e0b197" }
+
+[dependencies]
+raw-window-handle = "0.6.2"
+rayon = "1.10"
+rfd = "0.15.3"
+
+[lints]
+workspace = true
