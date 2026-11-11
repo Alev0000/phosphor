@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Install guide and troubleshooting
+    url: https://github.com/Alev0000/phosphor/blob/main/crates/phosphor-ae/INSTALL.md
+    about: Most "the effect doesn't show up" problems are solved here.
+  - name: NTSCRT (the original macOS app)
+    url: https://github.com/finnmckenty/NTSCRT
+    about: Questions about NTSCRT itself go to its own repository.
+  - name: ntsc-rs (the NTSC signal emulation)
+    url: https://github.com/ntsc-rs/ntsc-rs
+    about: For ntsc-rs's own app and plugins.

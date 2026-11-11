@@ -1,0 +1,53 @@
+name: Phosphor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/phosphor-core/**"
+      - "crates/phosphor-ae/**"
+      - "crates/ntscrs/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/phosphor.yml"
+  pull_request:
+    paths:
+      - "crates/phosphor-core/**"
+      - "crates/phosphor-ae/**"
+      - "crates/ntscrs/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/phosphor.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: phosphor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Test phosphor-core
+        run: cargo test -p phosphor-core --release
+
+      - name: Build the After Effects plugin
+        run: cargo build -p phosphor-ae --release
+
+      - name: Package Phosphor.aex
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          Copy-Item target\release\phosphor_ae.dll out\Phosphor.aex
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Phosphor.aex
+          path: out/Phosphor.aex

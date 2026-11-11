@@ -1,0 +1,16 @@
+name: Feature request
+description: An idea to make Phosphor better.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: Describe the idea and what you would use it for.
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: References
+      description: Examples, screenshots or videos of the look you're after, if you have any.

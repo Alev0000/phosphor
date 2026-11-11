@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="t">
+  <title id="t">Phosphor</title>
+  <defs>
+    <!-- the tube's glass: dark, a little lighter where the beam is -->
+    <radialGradient id="glass" cx="50%" cy="48%" r="62%">
+      <stop offset="0" stop-color="#0f2a24"/>
+      <stop offset="0.65" stop-color="#07130f"/>
+      <stop offset="1" stop-color="#020504"/>
+    </radialGradient>
+    <linearGradient id="bezel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2d33"/>
+      <stop offset="1" stop-color="#121418"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- scanlines: the gaps between the beam's lines -->
+    <pattern id="scan" width="8" height="7" patternUnits="userSpaceOnUse">
+      <rect y="5" width="8" height="2" fill="#000" fill-opacity="0.55"/>
+    </pattern>
+    <clipPath id="screen">
+      <rect x="30" y="30" width="196" height="196" rx="40"/>
+    </clipPath>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="0.8"/>
+    </filter>
+    <!-- the letter: a P drawn by the beam -->
+    <path id="p" fill-rule="evenodd"
+          d="M92 70 H138 A38 38 0 0 1 138 146 H120 V186 H92 Z M120 94 V122 H136 A14 14 0 0 0 136 94 Z"/>
+  </defs>
+
+  <!-- set -->
+  <rect x="6" y="6" width="244" height="244" rx="58" fill="url(#bezel)"/>
+  <rect x="6.5" y="6.5" width="243" height="243" rx="57.5" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+
+  <!-- screen -->
+  <g clip-path="url(#screen)">
+    <rect x="30" y="30" width="196" height="196" fill="url(#glass)"/>
+    <g transform="translate(-6 0)">
+      <!-- phosphor glow around the letter -->
+      <use href="#p" fill="#2dffa0" opacity="0.55" filter="url(#glow)"/>
+      <!-- NTSC color bleed: red and blue land a little off the brightness -->
+      <use href="#p" fill="#ff2e63" transform="translate(-5 0)" opacity="0.85" filter="url(#soft)"/>
+      <use href="#p" fill="#2e7bff" transform="translate(5 0)" opacity="0.85" filter="url(#soft)"/>
+      <use href="#p" fill="#eafff6" filter="url(#soft)"/>
+    </g>
+    <rect x="30" y="30" width="196" height="196" fill="url(#scan)"/>
+    <rect x="30" y="30" width="196" height="196" fill="url(#shine)"/>
+  </g>
+  <rect x="30" y="30" width="196" height="196" rx="40" fill="none" stroke="#000" stroke-opacity="0.6" stroke-width="2"/>
+</svg>

@@ -1,0 +1,46 @@
+name: Bug report
+description: Something in Phosphor doesn't work or looks wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! A few details make it much easier to fix.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what you got instead. Screenshots help a lot.
+    validations:
+      required: true
+  - type: input
+    id: phosphor
+    attributes:
+      label: Phosphor version
+      description: From the release you downloaded, or Effect Controls › Phosphor › About.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: After Effects version
+      placeholder: "After Effects 2026 (26.x)"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Windows version and graphics card
+      placeholder: "Windows 11, NVIDIA RTX 3060"
+  - type: textarea
+    id: settings
+    attributes:
+      label: Look and settings
+      description: Which look you used and what you changed. A saved look file (Save Look File…) is perfect.
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Paste the end of `%TEMP%\phosphor-ae.log` (paste that address into File Explorer).
+      render: text
