@@ -1,0 +1,82 @@
+PHOSPHOR - CREDITS
+==================
+
+Phosphor is an After Effects port of NTSCRT. Almost everything that makes it
+look good was made by the people below; Phosphor is the glue.
+
+Vibecoded: the author is not a programmer. The code was written with AI,
+then directed, tested and checked in After Effects by a human. It is shared
+as-is; fixes and improvements are welcome.
+
+
+THE ORIGINAL APP
+----------------
+
+NTSCRT by Finn McKenty - https://github.com/finnmckenty/NTSCRT
+  The app Phosphor reproduces: its pipeline (Digital Video, NTSC, Downscale,
+  Glitch, CRT, Screen Loop), its codec, Glitch receiver, video feedback,
+  27 looks, 5 Screen Loop presets and default settings. Phosphor ports them
+  from Swift/Metal to Rust/Direct3D 11.
+  MIT license, Copyright (c) 2026 Finn McKenty. See LICENSES\NTSCRT-MIT.txt
+
+
+THE SIGNAL
+----------
+
+ntsc-rs by valadaptive - https://github.com/ntsc-rs/ntsc-rs
+  The NTSC/VHS signal, used unchanged (v0.9.4, the version NTSCRT uses).
+  MIT OR ISC OR Apache-2.0. Phosphor's source is a fork of ntsc-rs, and its
+  NTSC controls are adapted from ntsc-rs's own After Effects plugin.
+  ntsc-rs is a port of ntscqt (JargeZ), a GUI for ntsc (zhuker), itself a
+  port of composite-video-simulator (joncampbell123).
+
+
+THE SCREEN
+----------
+
+librashader by SnowflakePowered (Ronny Chan)
+  https://github.com/SnowflakePowered/librashader
+  Runs the RetroArch shaders. Used unmodified under MPL-2.0
+  (LICENSES\MPL-2.0.txt); its source is at the link.
+
+libretro/slang-shaders - https://github.com/libretro/slang-shaders
+  The CRT shaders, shipped as-is in "shaders" with their notices in each file.
+  - crt-royale: TroggleMonkey (GPL-2.0-or-later; blur helpers MIT)
+  - crt-easymode, crt-aperture: EasyMode (GPL)
+  - crt-hyllian: Hyllian (MIT)
+  - crtsim: J. Kyle Pittman (CC0)
+  - crtglow: Themaister, moire mitigation by Timothy Lottes, added by hunterk
+  GPL text: LICENSES\GPL-2.0.txt. The plugin loads them as separate files.
+
+
+THE GLITCHES AND THE CODEC
+--------------------------
+
+analogtv by Trevor Blackwell, from XScreenSaver (Jamie Zawinski)
+  The design NTSCRT's Glitch stage follows. NTSCRT's receiver (and so
+  Phosphor's) is its own code, written from that design.
+
+The Digital Video codec uses the reference tables of the JPEG standard
+(ITU-T T.81, Annex K).
+
+
+BUILDING BLOCKS
+---------------
+
+- after-effects / premiere crates by Adrian Eddy and Moritz Moeller
+  (virtualritz): Rust bindings for the After Effects SDK.
+  Apache-2.0 OR BSD-3-Clause OR MIT OR Zlib.
+- windows-rs (Microsoft): Direct3D 11 from Rust. MIT OR Apache-2.0.
+- rayon, serde_json, rfd, libm, raw-window-handle and the other crates in
+  Cargo.lock, each under its own license (MIT, Apache-2.0 or similar).
+- Adobe After Effects SDK (Adobe).
+
+
+PHOSPHOR'S OWN CODE
+-------------------
+
+The code written for Phosphor (crates/phosphor-core, crates/phosphor-ae) is
+MIT OR ISC OR Apache-2.0, like ntsc-rs. The parts ported from NTSCRT are
+under NTSCRT's MIT license, Copyright (c) 2026 Finn McKenty.
+
+https://github.com/Alev0000/phosphor

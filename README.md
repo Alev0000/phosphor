@@ -67,7 +67,7 @@ You need Windows 10 or 11 (64-bit) and After Effects (tested on 2026).
 3. Copy the `Phosphor` folder into `C:\Program Files\Adobe\Common\Plug-ins\7.0\MediaCore\` (accept the administrator prompt).
 4. Open After Effects: **Effect › Stylize › Phosphor**, then choose a look.
 
-Step-by-step guide with troubleshooting: **[INSTALL.md](crates/phosphor-ae/INSTALL.md)**.
+Troubleshooting and more tips: **[README.txt](crates/phosphor-ae/README.txt)** (also inside the zip).
 
 ## Good to know
 
@@ -92,7 +92,7 @@ Phosphor is the glue; the hard parts are other people's work:
   J. Kyle Pittman, Themaister and others.
 - **analogtv** by Trevor Blackwell (XScreenSaver): the design behind the Glitch stage.
 
-Full list, with licenses: **[CREDITS.md](crates/phosphor-ae/CREDITS.md)**.
+Full list, with licenses: **[CREDITS.txt](crates/phosphor-ae/CREDITS.txt)**.
 
 > **Vibecoded.** Phosphor was written with AI for an author who is not a programmer, and tested in
 > After Effects. It is free and open source, shared as-is. Fixes and improvements are welcome.
@@ -105,15 +105,18 @@ This repository is a fork of [ntsc-rs](https://github.com/ntsc-rs/ntsc-rs) (its 
 | Folder | What it is |
 |---|---|
 | [`crates/phosphor-core`](crates/phosphor-core) | The stages, testable outside After Effects (Rust, Direct3D 11). |
-| [`crates/phosphor-ae`](crates/phosphor-ae) | The After Effects effect. Build notes in its [README](crates/phosphor-ae/README.md). |
+| [`crates/phosphor-ae`](crates/phosphor-ae) | The After Effects effect. |
 
 ```powershell
 cargo test -p phosphor-core --release
 cargo build -p phosphor-ae --release   # target\release\phosphor_ae.dll → Phosphor.aex
 ```
 
+Needs Rust stable, Visual Studio 2022 Build Tools (C++) and LLVM. The CRT shaders are copied from
+slang-shaders with `cargo run -p phosphor-core --release --example gen_crt_params -- <slang-shaders> <out\shaders>`.
+
 ## License
 
 Phosphor's own code is MIT OR ISC OR Apache-2.0. The parts ported from NTSCRT are under NTSCRT's MIT
 license (Copyright (c) 2026 Finn McKenty). ntsc-rs, librashader and the shaders keep their own
-licenses; see [CREDITS.md](crates/phosphor-ae/CREDITS.md).
+licenses; see [CREDITS.txt](crates/phosphor-ae/CREDITS.txt).
