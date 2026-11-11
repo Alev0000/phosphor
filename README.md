@@ -28,10 +28,8 @@
 
 Phosphor runs your layer through a whole analog video chain, in the same order as NTSCRT:
 
-```
-your layer → Digital Video → NTSC / VHS signal → Downscale → Glitch → CRT screen
-                                     + Screen Loop: a camera filming its own TV
-```
+**Digital Video → NTSC / VHS → Downscale → Glitch → CRT**, plus the **Screen Loop**: a camera
+filming its own TV.
 
 | Stage | What you get |
 |---|---|
