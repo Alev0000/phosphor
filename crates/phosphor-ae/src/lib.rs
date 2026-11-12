@@ -93,7 +93,7 @@ pub enum ControlValue {
 }
 
 const DOWNSCALE_PRESETS: &[(&str, usize)] = &[("SNES (256px)", 256), ("VGA (320px)", 320), ("Custom", 0)];
-const NO_LOOK: &str = "Choose a look…";
+const NO_LOOK: &str = "Choose a look...";
 
 /// Settings sampled over time, valid while the params' all-time state receipt is unchanged.
 #[derive(Default)]
@@ -345,6 +345,9 @@ impl AdobePluginInstance for Instance {
         let in_data = plugin.in_data;
         if let Err(e) = plugin.global.legacy_render(self.id, &in_data, in_layer, out_layer, plugin.params) {
             log::line(&format!("legacy render error: {e}"));
+            if e.to_string().contains(CANCELLED) || matches!(e.downcast_ref::<ae::Error>(), Some(ae::Error::InterruptCancel)) {
+                return Err(ae::Error::InterruptCancel);
+            }
             plugin.out_data.set_error_msg(&format!("Phosphor: {e}"));
         }
         Ok(())
@@ -371,7 +374,14 @@ impl AdobePluginInstance for Instance {
                     r.as_ref().err().map(|e| format!(" - error: {e}")).unwrap_or_default()
                 ));
                 match r {
-                    Err(e) if e.to_string().contains(CANCELLED) => return Err(Error::InterruptCancel),
+                    // After Effects stopping a frame (scrubbing, a new frame wanted) is not an error to show:
+                    // ours ("cancelled") or its own, coming back from a checkout.
+                    Err(e)
+                        if e.to_string().contains(CANCELLED)
+                            || matches!(e.downcast_ref::<Error>(), Some(Error::InterruptCancel)) =>
+                    {
+                        return Err(Error::InterruptCancel)
+                    }
                     Err(e) => plugin.out_data.set_error_msg(&format!("Phosphor: {e}")),
                     Ok(()) => {}
                 }
@@ -511,8 +521,8 @@ impl AdobePluginGlobal for Plugin {
         let mut looks = vec![NO_LOOK];
         looks.extend(LOOKS.iter().map(|(name, _)| *name));
         popup(params, ParamID::LookMenu, "Look", &looks, 1, false, true)?;
-        button(params, ParamID::LoadLook, "Load Look File…")?;
-        button(params, ParamID::SaveLook, "Save Look File…")?;
+        button(params, ParamID::LoadLook, "Load Look File...")?;
+        button(params, ParamID::SaveLook, "Save Look File...")?;
 
         params.add_group(ParamID::GroupStart(GROUP_DOWNSCALE), ParamID::GroupEnd(GROUP_DOWNSCALE), "Downscale", true, |g| {
             checkbox(g, ParamID::DownscaleOn, "Downscale On", "Enabled", true, true)?;
@@ -544,8 +554,8 @@ impl AdobePluginGlobal for Plugin {
 
         params.add_group(ParamID::GroupStart(GROUP_NTSC), ParamID::GroupEnd(GROUP_NTSC), "NTSC (TV)", true, |g| {
             checkbox(g, ParamID::NtscOn, "NTSC On", "Enabled", true, true)?;
-            button(g, ParamID::NtscLoad, "Load ntsc-rs Preset…")?;
-            button(g, ParamID::NtscSave, "Save ntsc-rs Preset…")?;
+            button(g, ParamID::NtscLoad, "Load ntsc-rs Preset...")?;
+            button(g, ParamID::NtscSave, "Save ntsc-rs Preset...")?;
             NtscParams::map_params(g, &self.ntsc_list.setting_descriptors, &self.house_ntsc, &self.house_ntsc)
         })?;
 
@@ -590,7 +600,7 @@ impl AdobePluginGlobal for Plugin {
             popup(g, ParamID::LoopPreset, "Screen Loop Preset", &presets, 1, false, true)?;
             // The camera that films the TV: the GPU matches the CPU to within 8-bit rounding.
             popup(g, ParamID::LoopRenderOn, "Camera renders on", &["GPU (recommended)", "CPU (exact)"], 1, false, false)?;
-            button(g, ParamID::LoopSave, "Save Screen Loop Preset…")?;
+            button(g, ParamID::LoopSave, "Save Screen Loop Preset...")?;
             let defaults = HowlSettings::default();
             let (cx, cy) = ((defaults.get("center_x") + 0.5) * 100.0, (defaults.get("center_y") + 0.5) * 100.0);
             point(g, ParamID::LoopCenter, "Vanishing point", cx as f32, cy as f32)?;
