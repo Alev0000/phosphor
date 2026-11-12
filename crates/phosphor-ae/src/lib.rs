@@ -175,6 +175,22 @@ mod log {
     }
 }
 
+/// After Effects' message box takes at most 255 bytes (the after-effects crate panics past that).
+/// A longer message is cut and points to the log, which gets it in full.
+fn fit_msg(msg: &str) -> String {
+    const MAX: usize = 255;
+    if msg.len() <= MAX {
+        return msg.to_string();
+    }
+    log::args(format_args!("message shown cut: {msg}"));
+    const MORE: &str = "... (full text in %TEMP%\\phosphor-ae.log)";
+    let mut end = MAX - MORE.len();
+    while !msg.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}{MORE}", &msg[..end])
+}
+
 /// Records what crashed, and where, in the log: After Effects only says "crash occurred".
 mod crash {
     use std::cell::Cell;
@@ -348,7 +364,7 @@ impl AdobePluginInstance for Instance {
             if e.to_string().contains(CANCELLED) || matches!(e.downcast_ref::<ae::Error>(), Some(ae::Error::InterruptCancel)) {
                 return Err(ae::Error::InterruptCancel);
             }
-            plugin.out_data.set_error_msg(&format!("Phosphor: {e}"));
+            plugin.out_data.set_error_msg(&fit_msg(&format!("Phosphor: {e}")));
         }
         Ok(())
     }
@@ -382,7 +398,7 @@ impl AdobePluginInstance for Instance {
                     {
                         return Err(Error::InterruptCancel)
                     }
-                    Err(e) => plugin.out_data.set_error_msg(&format!("Phosphor: {e}")),
+                    Err(e) => plugin.out_data.set_error_msg(&fit_msg(&format!("Phosphor: {e}"))),
                     Ok(()) => {}
                 }
             }
@@ -654,12 +670,13 @@ impl AdobePluginGlobal for Plugin {
                 }
             }
             Command::About => {
-                out_data.set_return_msg(&format!(
-                    "Phosphor {}.{}.{}\r\rAnalog video, from the camera to the tube: digital video, NTSC/VHS signal, downscale, TV and VCR glitches, CRT shaders and screen feedback.\r\rA port of NTSCRT by Finn McKenty. NTSC signal by ntsc-rs (valadaptive). CRT shaders from libretro/slang-shaders (TroggleMonkey, EasyMode, Hyllian, J. Kyle Pittman, Themaister) via librashader (Ronny Chan). Glitch receiver after analogtv by Trevor Blackwell.\r\rVibecoded: written with AI by a non-programmer. Free and open source; see CREDITS.txt next to the plugin.",
+                // After Effects takes at most 255 bytes here; the full credits are in CREDITS.txt.
+                out_data.set_return_msg(&fit_msg(&format!(
+                    "Phosphor {}.{}.{}\r\rA port of NTSCRT by Finn McKenty. Signal: ntsc-rs (valadaptive). CRT: libretro shaders via librashader. Glitch: after analogtv (Trevor Blackwell).\r\rVibecoded with AI. Free and open source; see CREDITS.txt.",
                     env!("EFFECT_VERSION_MAJOR"),
                     env!("EFFECT_VERSION_MINOR"),
                     env!("EFFECT_VERSION_PATCH")
-                ));
+                )));
             }
             Command::UpdateParamsUi => self.update_ui(&in_data, params)?,
             Command::UserChangedParam { param_index } => {
@@ -1228,7 +1245,13 @@ impl Plugin {
         };
         for (pi, preset) in CRT_PRESETS.iter().enumerate() {
             if !in_data.is_premiere() {
-                self.set_hidden(in_data, params, &[ParamID::GroupStart(GROUP_CRT_PRESET + pi as u32)], pi != selected);
+                // Hiding only the group's header leaves its controls showing, loose, in After Effects:
+                // hide every one of them too.
+                let mut ids = vec![ParamID::GroupStart(GROUP_CRT_PRESET + pi as u32)];
+                ids.extend(
+                    preset.params.iter().enumerate().filter(|(_, p)| p.min < p.max).map(|(i, _)| ParamID::Crt(pi as u8, i as u8)),
+                );
+                self.set_hidden(in_data, params, &ids, pi != selected);
             }
             if pi != selected {
                 continue;
@@ -1450,7 +1473,7 @@ impl Plugin {
         let text = match std::fs::read_to_string(&path) {
             Ok(t) => t,
             Err(e) => {
-                out_data.set_error_msg(&format!("Couldn't read {}: {e}", path.display()));
+                out_data.set_error_msg(&fit_msg(&format!("Couldn't read {}: {e}", path.display())));
                 return Ok(());
             }
         };
@@ -1460,7 +1483,7 @@ impl Plugin {
                     Self::set(params, ParamID::LoopPreset, ControlValue::Popup(1))?;
                     Self::apply_screen_loop(in_data, params, &s)?;
                 }
-                Err(e) => out_data.set_error_msg(&format!("Couldn't load the Screen Loop preset: {e}")),
+                Err(e) => out_data.set_error_msg(&fit_msg(&format!("Couldn't load the Screen Loop preset: {e}"))),
             }
             return Ok(());
         }
@@ -1469,7 +1492,7 @@ impl Plugin {
                 Self::set(params, ParamID::LookMenu, ControlValue::Popup(1))?;
                 self.apply_look(in_data, params, &l)?;
             }
-            Err(e) => out_data.set_error_msg(&format!("Couldn't load the look: {e}")),
+            Err(e) => out_data.set_error_msg(&fit_msg(&format!("Couldn't load the look: {e}"))),
         }
         Ok(())
     }
@@ -1481,7 +1504,7 @@ impl Plugin {
         }
         let Some(path) = dialog.save_file() else { return };
         if let Err(e) = std::fs::write(&path, text) {
-            out_data.set_error_msg(&format!("Couldn't save {}: {e}", path.display()));
+            out_data.set_error_msg(&fit_msg(&format!("Couldn't save {}: {e}", path.display())));
         }
     }
 
@@ -1513,7 +1536,7 @@ impl Plugin {
                 if let Some((name, json)) = usize::try_from(i).ok().and_then(|i| LOOKS.get(i)) {
                     match Look::parse(json) {
                         Ok(l) => self.apply_look(in_data, params, &l)?,
-                        Err(e) => out_data.set_error_msg(&format!("Couldn't load {name}: {e}")),
+                        Err(e) => out_data.set_error_msg(&fit_msg(&format!("Couldn't load {name}: {e}"))),
                     }
                 }
             }
@@ -1541,7 +1564,7 @@ impl Plugin {
                             Self::set(params, id, x)?;
                         }
                     }
-                    Err(e) => out_data.set_error_msg(&format!("Couldn't load the preset: {e}")),
+                    Err(e) => out_data.set_error_msg(&fit_msg(&format!("Couldn't load the preset: {e}"))),
                 }
             }
             ParamID::NtscSave => {
@@ -1555,7 +1578,7 @@ impl Plugin {
                     .map_err(|e| e.to_string())
                     .and_then(|mut f| self.ntsc_list.write_json_to_io(&settings, &mut f).map_err(|e| e.to_string()));
                 if let Err(e) = res {
-                    out_data.set_error_msg(&format!("Couldn't save the preset: {e}"));
+                    out_data.set_error_msg(&fit_msg(&format!("Couldn't save the preset: {e}")));
                 }
             }
             ParamID::DigitalFormat => {
