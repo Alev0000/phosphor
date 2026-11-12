@@ -102,6 +102,23 @@ pub fn apply_ntsc(img: &Image, effect: &NtscEffect, frame: i64, scale: [f32; 2])
         static BUFFERS: std::cell::RefCell<(Vec<u8>, Vec<f32>)> = const { std::cell::RefCell::new((Vec::new(), Vec::new())) };
     }
     let (w, h) = (img.width, img.height);
+    if w == 0 || h == 0 {
+        return img.clone();
+    }
+    // ntsc-rs indexes out of range on pictures 2-3 rows tall (After Effects asks for those for
+    // thumbnails and tiny previews). Run it on a copy padded to 4 rows, then crop.
+    const MIN_HEIGHT: usize = 4;
+    if h < MIN_HEIGHT {
+        let mut tall = Image::new(w, MIN_HEIGHT);
+        for y in 0..MIN_HEIGHT {
+            let src = y.min(h - 1) * w;
+            tall.pixels[y * w..(y + 1) * w].copy_from_slice(&img.pixels[src..src + w]);
+        }
+        let done = apply_ntsc(&tall, effect, frame, scale);
+        let mut out = Image::new(w, h);
+        out.pixels.copy_from_slice(&done.pixels[..w * h]);
+        return out;
+    }
     let frame = frame.max(0) as usize;
     let field = effect.use_field.to_yiq_field(frame);
     BUFFERS.with_borrow_mut(|(buf, yiq)| {
