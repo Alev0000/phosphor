@@ -1,7 +1,8 @@
 PHOSPHOR - analog TV, VHS and CRT looks for After Effects
 ==========================================================
 
-An After Effects port of NTSCRT by Finn McKenty. Free and open source.
+An After Effects port of NTSCRT (by Finn McKenty), made by alev.
+Free and open source.
 https://github.com/Alev0000/phosphor
 
 

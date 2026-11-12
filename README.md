@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Analog TV, VHS and CRT looks for After Effects, from the camera to the tube.</b><br>
-  An After Effects port of <a href="https://github.com/finnmckenty/NTSCRT">NTSCRT</a> by Finn McKenty.
+  An After Effects port of <a href="https://github.com/finnmckenty/NTSCRT">NTSCRT</a> (by Finn McKenty), made by <b>alev</b>.
 </p>
 
 <p align="center">
@@ -85,7 +85,8 @@ Troubleshooting and more tips: **[README.txt](crates/phosphor-ae/README.txt)** (
 
 ## Credits
 
-Phosphor is the glue; the hard parts are other people's work:
+Phosphor, the After Effects port, is made by **alev**. It is the glue; the hard parts are other
+people's work:
 
 - **[NTSCRT](https://github.com/finnmckenty/NTSCRT)** by Finn McKenty: the app Phosphor reproduces, its
   stages, looks and presets (MIT).
@@ -121,6 +122,6 @@ slang-shaders with `cargo run -p phosphor-core --release --example gen_crt_param
 
 ## License
 
-Phosphor's own code is MIT OR ISC OR Apache-2.0. The parts ported from NTSCRT are under NTSCRT's MIT
+Phosphor's own code is Copyright (c) 2026 alev, under MIT OR ISC OR Apache-2.0. The parts ported from NTSCRT are under NTSCRT's MIT
 license (Copyright (c) 2026 Finn McKenty). ntsc-rs, librashader and the shaders keep their own
 licenses; see [CREDITS.txt](crates/phosphor-ae/CREDITS.txt).

@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use Phosphor, please credit it like this."
+title: "Phosphor"
+abstract: "Analog TV, VHS and CRT looks for After Effects: an After Effects port of NTSCRT by Finn McKenty."
+type: software
+authors:
+  - alias: "alev"
+repository-code: "https://github.com/Alev0000/phosphor"
+url: "https://github.com/Alev0000/phosphor"
+license:
+  - MIT
+  - ISC
+  - Apache-2.0
+version: "0.1.3"
+date-released: "2026-11-12"
+references:
+  - type: software
+    title: "NTSCRT"
+    authors:
+      - name: "Finn McKenty"
+    repository-code: "https://github.com/finnmckenty/NTSCRT"
+  - type: software
+    title: "ntsc-rs"
+    authors:
+      - alias: "valadaptive"
+    repository-code: "https://github.com/ntsc-rs/ntsc-rs"

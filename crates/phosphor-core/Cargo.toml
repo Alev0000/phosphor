@@ -2,6 +2,7 @@
 name = "phosphor-core"
 version = "0.1.0"
 edition = "2021"
+authors = ["alev"]
 license = "MIT OR ISC OR Apache-2.0"
 description = "Phosphor: the NTSCRT pipeline stages (digital video, glitch, downscale, screen loop) plus the librashader CRT stage"
 

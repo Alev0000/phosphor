@@ -1,8 +1,8 @@
 PHOSPHOR - CREDITS
 ==================
 
-Phosphor is an After Effects port of NTSCRT. Almost everything that makes it
-look good was made by the people below; Phosphor is the glue.
+Phosphor is an After Effects port of NTSCRT, made by alev. Almost everything
+that makes it look good was made by the people below; Phosphor is the glue.
 
 Vibecoded: the author is not a programmer. The code was written with AI,
 then directed, tested and checked in After Effects by a human. It is shared
@@ -76,7 +76,7 @@ PHOSPHOR'S OWN CODE
 -------------------
 
 The code written for Phosphor (crates/phosphor-core, crates/phosphor-ae) is
-MIT OR ISC OR Apache-2.0, like ntsc-rs. The parts ported from NTSCRT are
+Copyright (c) 2026 alev, under MIT OR ISC OR Apache-2.0, like ntsc-rs. The parts ported from NTSCRT are
 under NTSCRT's MIT license, Copyright (c) 2026 Finn McKenty.
 
 https://github.com/Alev0000/phosphor

@@ -673,7 +673,7 @@ impl AdobePluginGlobal for Plugin {
             Command::About => {
                 // After Effects takes at most 255 bytes here; the full credits are in CREDITS.txt.
                 out_data.set_return_msg(&fit_msg(&format!(
-                    "Phosphor {}.{}.{}\r\rA port of NTSCRT by Finn McKenty. Signal: ntsc-rs (valadaptive). CRT: libretro shaders via librashader. Glitch: after analogtv (Trevor Blackwell).\r\rVibecoded with AI. Free and open source; see CREDITS.txt.",
+                    "Phosphor {}.{}.{}\r\rPort by alev. Original app: NTSCRT by Finn McKenty. Signal: ntsc-rs (valadaptive). CRT: libretro shaders via librashader. Glitch: after analogtv (Trevor Blackwell).\r\rVibecoded with AI. Free and open source; see CREDITS.txt.",
                     env!("EFFECT_VERSION_MAJOR"),
                     env!("EFFECT_VERSION_MINOR"),
                     env!("EFFECT_VERSION_PATCH")
