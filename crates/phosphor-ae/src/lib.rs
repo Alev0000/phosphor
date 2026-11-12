@@ -150,9 +150,7 @@ mod log {
     }
 
     pub fn args(msg: std::fmt::Arguments) {
-        if let Ok(mut f) = FILE.lock() {
-            write(&mut f, msg);
-        }
+        write(&mut FILE.lock().unwrap_or_else(std::sync::PoisonError::into_inner), msg);
     }
 
     /// Never waits for the lock, so the crash handler can't deadlock on a thread that died holding it.
@@ -674,7 +672,7 @@ impl Plugin {
     fn state(&self, id: u64) -> Arc<InstanceState> {
         self.instances
             .lock()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .entry(id)
             .or_insert_with(|| {
                 Arc::new(InstanceState {
@@ -776,7 +774,7 @@ impl Plugin {
     fn sampled<T: Clone>(hist: &Mutex<History<T>>, receipt: &Option<Vec<[i32; 4]>>, k: i64, sample: impl FnOnce() -> T) -> T {
         let Some(receipt) = receipt else { return sample() };
         {
-            let mut h = hist.lock().unwrap();
+            let mut h = hist.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             if &h.receipt != receipt {
                 h.receipt = receipt.clone();
                 h.by_frame.clear();
@@ -786,7 +784,7 @@ impl Plugin {
             }
         }
         let v = sample();
-        let mut h = hist.lock().unwrap();
+        let mut h = hist.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if &h.receipt == receipt {
             h.by_frame.insert(k, v.clone());
         }
@@ -881,7 +879,7 @@ impl Plugin {
         if checked(params, ParamID::LoopOn)? {
             // The loop runs in order: check out the scene frames since the state it continues from.
             let key = Self::loop_key(in_data, params, w, h);
-            let plan = state.screen_loop.lock().unwrap().plan(key, frame);
+            let plan = state.screen_loop.lock().unwrap_or_else(std::sync::PoisonError::into_inner).plan(key, frame);
             data.scenes = LoopCache::scene_frames(&plan, frame);
             for (i, f) in data.scenes.iter().enumerate() {
                 extra.callbacks().checkout_layer(0, SCENE_BASE + i as i32, &req, Self::frame_time(in_data, *f), in_data.time_step(), in_data.time_scale())?;
@@ -923,6 +921,9 @@ impl Plugin {
         let Some(input_world) = extra.callbacks().checkout_layer_pixels(0)? else { return Ok(()) };
         let Some(mut output_world) = extra.callbacks().checkout_output()? else { return Ok(()) };
         let (ow, oh) = (output_world.width(), output_world.height());
+        if ow == 0 || oh == 0 {
+            return Ok(());
+        }
         let input = pixels::read_layer(&input_world, ow, oh, input_world.pixel_format()?.into())?;
         let _stage = crash::stage("render: effect");
         let data: PreData = extra.pre_render_data::<PreData>().cloned().unwrap_or_default();
@@ -947,6 +948,9 @@ impl Plugin {
         }
         let _stage = crash::stage("premiere render");
         let (ow, oh) = (out_layer.width(), out_layer.height());
+        if ow == 0 || oh == 0 {
+            return Ok(());
+        }
         let input = pixels::read_layer(in_layer, ow, oh, in_layer.pr_pixel_format()?.into())?;
         let out = self.render_frame(id, in_data, params, &input, ow, oh, &|_| None, &|_| None)?;
         let fmt = out_layer.pr_pixel_format()?.into();
@@ -1067,7 +1071,7 @@ impl Plugin {
         let chain_size = Self::chain_size(w, h, downscale);
 
         let loop_gpu = params.get(ParamID::LoopRenderOn)?.as_popup()?.value() == 1;
-        let mut cache = state.screen_loop.lock().unwrap();
+        let mut cache = state.screen_loop.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let plan = cache.plan(key, n);
 
         // One pass at frame k, with the settings in force then.

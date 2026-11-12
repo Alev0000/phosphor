@@ -62,6 +62,15 @@ fn create_device(driver: D3D_DRIVER_TYPE) -> windows::core::Result<(ID3D11Device
     Ok((device.unwrap(), context.unwrap()))
 }
 
+/// Direct3D 11 textures stop at 16384 pixels per side; say so instead of "invalid parameter".
+fn check_size(what: &str, width: usize, height: usize) -> Result<(), Error> {
+    const MAX: usize = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION as usize;
+    if width == 0 || height == 0 || width > MAX || height > MAX {
+        return Err(format!("{what} is {width}x{height}; the GPU stages work from 1 to {MAX} pixels per side").into());
+    }
+    Ok(())
+}
+
 /// The graphics card's name, as Windows reports it.
 fn adapter_name(device: &ID3D11Device) -> String {
     use windows::core::Interface;
@@ -137,16 +146,31 @@ impl CrtRenderer {
         Ok(slot.as_mut().unwrap())
     }
 
+    /// Runs `f` on the GPU, starting it if needed. A device the driver removed (driver update or
+    /// crash, sleep, a TDR) never works again, so it is dropped and the next frame starts a new one;
+    /// so is everything left behind by a panic.
+    fn with_gpu<R>(&self, f: impl FnOnce(&mut Gpu) -> Result<R, Error>) -> Result<R, Error> {
+        let mut guard = self.gpu.lock().unwrap_or_else(|poisoned| {
+            let mut g = poisoned.into_inner();
+            *g = None;
+            g
+        });
+        let result = f(Self::gpu(&mut guard)?);
+        if result.is_err() && guard.as_ref().is_some_and(|g| unsafe { g.device.GetDeviceRemovedReason() }.is_err()) {
+            *guard = None;
+        }
+        result
+    }
+
     /// The Screen Loop's camera on the GPU (same result as `howlaround::camera_cpu`, to 8-bit rounding).
     pub fn camera(&self, scene: &Image, tv: &Rgba8, setup: &CameraSetup) -> Result<Image, Error> {
-        let mut guard = self.gpu.lock().unwrap();
-        let gpu = Self::gpu(&mut guard)?;
-        unsafe {
+        check_size("Screen Loop camera", scene.width, scene.height)?;
+        self.with_gpu(|gpu| unsafe {
             if gpu.compute.is_none() {
                 gpu.compute = Some(super::compute::Compute::new(&gpu.device)?);
             }
             gpu.compute.as_mut().unwrap().camera(&gpu.device, &gpu.context, scene, tv, setup)
-        }
+        })
     }
 
     /// `values` are (name, value) for the preset's parameters; missing ones keep the shader default.
@@ -159,9 +183,22 @@ impl CrtRenderer {
         values: &[(&str, f32)],
         frame_count: usize,
     ) -> Result<Image, Error> {
-        let mut guard = self.gpu.lock().unwrap();
-        let gpu = Self::gpu(&mut guard)?;
+        check_size("CRT input", input.width, input.height)?;
+        check_size("CRT output", out_width, out_height)?;
+        self.with_gpu(|gpu| self.render_on(gpu, input, out_width, out_height, preset, values, frame_count))
+    }
 
+    #[allow(clippy::too_many_arguments)]
+    fn render_on(
+        &self,
+        gpu: &mut Gpu,
+        input: &Image,
+        out_width: usize,
+        out_height: usize,
+        preset: &'static CrtPreset,
+        values: &[(&str, f32)],
+        frame_count: usize,
+    ) -> Result<Image, Error> {
         if !gpu.chains.contains_key(preset.id) {
             let path = self.shaders_root.join(preset.path);
             let chain = unsafe {
