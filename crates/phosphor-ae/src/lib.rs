@@ -146,7 +146,23 @@ mod log {
     static FILE: Mutex<Option<std::fs::File>> = Mutex::new(None);
 
     pub fn line(msg: &str) {
-        let Ok(mut f) = FILE.lock() else { return };
+        args(format_args!("{msg}"));
+    }
+
+    pub fn args(msg: std::fmt::Arguments) {
+        if let Ok(mut f) = FILE.lock() {
+            write(&mut f, msg);
+        }
+    }
+
+    /// Never waits for the lock, so the crash handler can't deadlock on a thread that died holding it.
+    pub fn args_now(msg: std::fmt::Arguments) {
+        if let Ok(mut f) = FILE.try_lock() {
+            write(&mut f, msg);
+        }
+    }
+
+    fn write(f: &mut Option<std::fs::File>, msg: std::fmt::Arguments) {
         if f.is_none() {
             let path = std::env::temp_dir().join("phosphor-ae.log");
             *f = std::fs::OpenOptions::new().create(true).append(true).open(path).ok();
@@ -158,6 +174,127 @@ mod log {
             let _ = writeln!(file, "{t} [{:?}] {msg}", std::thread::current().id());
             let _ = file.flush();
         }
+    }
+}
+
+/// Records what crashed, and where, in the log: After Effects only says "crash occurred".
+mod crash {
+    use std::cell::Cell;
+    use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+    use std::sync::Once;
+
+    use windows::Win32::Foundation::HMODULE;
+    use windows::Win32::System::Diagnostics::Debug::{AddVectoredExceptionHandler, EXCEPTION_POINTERS};
+    use windows::Win32::System::LibraryLoader::{
+        GetModuleFileNameW, GetModuleHandleExW, GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+        GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+    };
+
+    thread_local! {
+        static STAGE: Cell<&'static str> = const { Cell::new("") };
+    }
+    static LOGGED: AtomicU32 = AtomicU32::new(0);
+
+    /// Every stage name, so the last one entered on any thread fits in an atomic (its index + 1).
+    const NAMES: &[&str] = &[
+        "loading",
+        "creating the controls",
+        "updating the controls",
+        "changing a control",
+        "effect command",
+        "pre-render",
+        "render: reading the layer",
+        "render: effect",
+        "render: writing the result",
+        "premiere render",
+    ];
+    static LAST: AtomicUsize = AtomicUsize::new(0);
+
+    /// Marks what this thread is doing until the guard drops.
+    pub struct Stage(&'static str);
+
+    pub fn stage(name: &'static str) -> Stage {
+        if let Some(i) = NAMES.iter().position(|&n| n == name) {
+            LAST.store(i + 1, Ordering::Relaxed);
+        }
+        Stage(STAGE.with(|s| s.replace(name)))
+    }
+
+    impl Drop for Stage {
+        fn drop(&mut self) {
+            STAGE.with(|s| s.set(self.0));
+        }
+    }
+
+    pub fn install() {
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| unsafe {
+            AddVectoredExceptionHandler(1, Some(handler));
+            let previous = std::panic::take_hook();
+            std::panic::set_hook(Box::new(move |info| {
+                let stage = STAGE.try_with(|s| s.get()).unwrap_or("");
+                super::log::args(format_args!("PANIC during '{stage}': {info}"));
+                previous(info);
+            }));
+        });
+    }
+
+    fn describe(code: u32) -> Option<&'static str> {
+        Some(match code {
+            0xC000_0005 => "access violation",
+            0xC000_001D => "illegal instruction (CPU feature missing?)",
+            0xC000_0096 => "privileged instruction",
+            0xC000_00FD => "stack overflow",
+            0xC000_0094 => "integer divide by zero",
+            0xC000_008C => "array bounds exceeded",
+            _ => return None,
+        })
+    }
+
+    unsafe extern "system" fn handler(info: *mut EXCEPTION_POINTERS) -> i32 {
+        const CONTINUE_SEARCH: i32 = 0;
+        let Some(rec) = (unsafe { info.as_ref() }).and_then(|i| unsafe { i.ExceptionRecord.as_ref() }) else {
+            return CONTINUE_SEARCH;
+        };
+        let code = rec.ExceptionCode.0 as u32;
+        let Some(what) = describe(code) else { return CONTINUE_SEARCH };
+        let addr = rec.ExceptionAddress as usize;
+        let stage = STAGE.try_with(|s| s.get()).unwrap_or("");
+
+        let mut module = HMODULE::default();
+        let mut name = [0u16; 260];
+        let mut n = 0;
+        unsafe {
+            if GetModuleHandleExW(
+                GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                windows::core::PCWSTR(addr as *const u16),
+                &mut module,
+            )
+            .is_ok()
+            {
+                n = GetModuleFileNameW(Some(module), &mut name) as usize;
+            }
+        }
+        let path = &name[..n];
+        let file = path.rsplit(|&c| c == b'\\' as u16).next().unwrap_or(path);
+        // Also logged when After Effects itself faults (it may be reacting to something Phosphor
+        // returned): then the last Phosphor step on any thread is the clue. Capped, since the host may
+        // handle some faults of its own.
+        if LOGGED.fetch_add(1, Ordering::Relaxed) >= 20 {
+            return CONTINUE_SEARCH;
+        }
+        let file = String::from_utf16_lossy(file);
+        let offset = addr.wrapping_sub(module.0 as usize);
+        let target = if code == 0xC000_0005 && rec.NumberParameters >= 2 {
+            rec.ExceptionInformation[1]
+        } else {
+            0
+        };
+        let last = LAST.load(Ordering::Relaxed).checked_sub(1).and_then(|i| NAMES.get(i)).copied().unwrap_or("none");
+        super::log::args_now(format_args!(
+            "CRASH {what} (0x{code:08X}) at {file}+0x{offset:X} during '{stage}' (last Phosphor step: '{last}'), address 0x{target:X}"
+        ));
+        CONTINUE_SEARCH
     }
 }
 
@@ -219,7 +356,8 @@ impl AdobePluginInstance for Instance {
         let in_data = plugin.in_data;
         match command {
             Command::SmartPreRender { extra } => {
-                let r = plugin.global.pre_render(self.id, &in_data, extra, plugin.params);
+                let _stage = crash::stage("pre-render");
+                let r =plugin.global.pre_render(self.id, &in_data, extra, plugin.params);
                 if let Err(e) = &r {
                     log::line(&format!("pre_render frame {}: {e:?}", in_data.current_frame()));
                 }
@@ -370,6 +508,8 @@ fn snap_crt(v: f32, min: f32, max: f32, step: f32) -> f32 {
 
 impl AdobePluginGlobal for Plugin {
     fn params_setup(&self, params: &mut Parameters<ParamID>, _in_data: InData, _out_data: OutData) -> Result<(), Error> {
+        crash::install();
+        let _stage = crash::stage("creating the controls");
         let mut looks = vec![NO_LOOK];
         looks.extend(LOOKS.iter().map(|(name, _)| *name));
         popup(params, ParamID::LookMenu, "Look", &looks, 1, false, true)?;
@@ -475,8 +615,26 @@ impl AdobePluginGlobal for Plugin {
     }
 
     fn handle_command(&mut self, command: Command, in_data: InData, mut out_data: OutData, params: &mut Parameters<ParamID>) -> Result<(), Error> {
+        let _stage = crash::stage(match command {
+            Command::GlobalSetup => "loading",
+            Command::UpdateParamsUi => "updating the controls",
+            Command::UserChangedParam { .. } => "changing a control",
+            _ => "effect command",
+        });
         match command {
             Command::GlobalSetup => {
+                crash::install();
+                let (major, minor) = in_data.version();
+                log::args(format_args!(
+                    "Phosphor {}.{}.{} loaded in {} (API {major}.{minor}), {} threads, avx2 {}, avx512 {}",
+                    env!("EFFECT_VERSION_MAJOR"),
+                    env!("EFFECT_VERSION_MINOR"),
+                    env!("EFFECT_VERSION_PATCH"),
+                    if in_data.is_premiere() { "Premiere" } else { "After Effects" },
+                    std::thread::available_parallelism().map_or(0, |n| n.get()),
+                    std::arch::is_x86_feature_detected!("avx2"),
+                    std::arch::is_x86_feature_detected!("avx512f"),
+                ));
                 if in_data.is_premiere() {
                     let pf = suites::PixelFormat::new()?;
                     pf.clear_supported_pixel_formats(in_data.effect_ref())?;
@@ -761,10 +919,12 @@ impl Plugin {
     }
 
     fn smart_render(&self, id: u64, in_data: &InData, extra: SmartRenderExtra, params: &mut Parameters<ParamID>) -> Result<(), AnyError> {
+        let _stage = crash::stage("render: reading the layer");
         let Some(input_world) = extra.callbacks().checkout_layer_pixels(0)? else { return Ok(()) };
         let Some(mut output_world) = extra.callbacks().checkout_output()? else { return Ok(()) };
         let (ow, oh) = (output_world.width(), output_world.height());
         let input = pixels::read_layer(&input_world, ow, oh, input_world.pixel_format()?.into())?;
+        let _stage = crash::stage("render: effect");
         let data: PreData = extra.pre_render_data::<PreData>().cloned().unwrap_or_default();
         let fetch = |list: &[i64], base: i32, f: i64| -> Option<Image> {
             let i = list.iter().position(|&e| e == f)?;
@@ -775,6 +935,7 @@ impl Plugin {
         let earlier = |f: i64| fetch(&data.earlier, EARLIER_BASE, f);
         let scene = |f: i64| fetch(&data.scenes, SCENE_BASE, f);
         let out = self.render_frame(id, in_data, params, &input, ow, oh, &earlier, &scene)?;
+        let _stage = crash::stage("render: writing the result");
         let fmt = output_world.pixel_format()?.into();
         pixels::write_layer(&mut output_world, &out, fmt)?;
         Ok(())
@@ -784,6 +945,7 @@ impl Plugin {
         if !in_data.is_premiere() {
             return Ok(());
         }
+        let _stage = crash::stage("premiere render");
         let (ow, oh) = (out_layer.width(), out_layer.height());
         let input = pixels::read_layer(in_layer, ow, oh, in_layer.pr_pixel_format()?.into())?;
         let out = self.render_frame(id, in_data, params, &input, ow, oh, &|_| None, &|_| None)?;
@@ -870,7 +1032,15 @@ impl Plugin {
             glitch: glitch_on.then_some(&glitch_at as &dyn Fn(i64) -> GlitchSettings),
             crt: crt_on.then_some(CrtStage { preset, values: &crt_values }),
         };
-        state.pipeline.render(&req).map_err(|e| e.to_string().into())
+        let out = state.pipeline.render(&req).map_err(|e| e.to_string().into());
+        static GPU_LOGGED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+        if !GPU_LOGGED.load(std::sync::atomic::Ordering::Relaxed) {
+            if let Some(name) = state.pipeline.crt.adapter() {
+                GPU_LOGGED.store(true, std::sync::atomic::Ordering::Relaxed);
+                log::args(format_args!("GPU: {name}"));
+            }
+        }
+        out
     }
 
     #[allow(clippy::too_many_arguments)]

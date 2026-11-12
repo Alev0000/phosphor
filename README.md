@@ -60,7 +60,8 @@ After Effects keyframes. Look files open in both Phosphor and NTSCRT.
 
 ## Install
 
-You need Windows 10 or 11 (64-bit) and After Effects (tested on 2026).
+You need Windows 10 or 11 (64-bit) and After Effects. Tested on After Effects 2026; a crash has been
+reported on 2024 and is being investigated (see [Crashes](#good-to-know)).
 
 1. **[Download the latest `Phosphor-…-windows.zip`](https://github.com/Alev0000/phosphor/releases/latest)** and unzip it.
 2. Close After Effects.
@@ -76,8 +77,11 @@ Troubleshooting and more tips: **[README.txt](crates/phosphor-ae/README.txt)** (
 - **Screen Loop** is computed frame by frame, in order: playing forward is fast, jumping to the middle
   of the timeline takes a few seconds to build the tunnel.
 - **Same pictures as NTSCRT:** the NTSC stage is ntsc-rs 0.9.4, the version NTSCRT uses, unchanged.
-- Problems or ideas: [open an issue](https://github.com/Alev0000/phosphor/issues/new/choose). Attach
-  `%TEMP%\phosphor-ae.log` for bugs.
+- **Crashes:** if After Effects says *"crash occurred while invoking effect plug-in Phosphor"*, paste
+  `%TEMP%\phosphor-ae.log` into File Explorer's address bar and attach that file to an
+  [issue](https://github.com/Alev0000/phosphor/issues/new/choose), with your After Effects version.
+  Since 0.1.1 the log records what crashed and where, which is usually enough to fix it.
+- Problems or ideas: [open an issue](https://github.com/Alev0000/phosphor/issues/new/choose).
 
 ## Credits
 

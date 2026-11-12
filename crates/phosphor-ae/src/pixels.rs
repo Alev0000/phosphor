@@ -109,11 +109,15 @@ pub fn read_layer(layer: &Layer, width: usize, height: usize, fmt: Fmt) -> Resul
     let order = fmt.order();
     let buf = layer.buffer();
     let px_bytes = 4 * bpc;
+    // An origin past the canvas edge leaves nothing to copy (and must not index past the row).
+    let n = lw.min(width.saturating_sub(ox));
     img.pixels.par_chunks_exact_mut(width).enumerate().for_each(|(ty, out)| {
         out.fill([0.0, 0.0, 0.0, 1.0]);
         let Some(y) = ty.checked_sub(oy).filter(|&y| y < lh) else { return };
+        if n == 0 {
+            return;
+        }
         let row = &buf[row_offset(rb, lh, y)..];
-        let n = lw.min(width.saturating_sub(ox));
         for (x, o) in out[ox..ox + n].iter_mut().enumerate() {
             let c = decode(fmt, &row[x * px_bytes..(x + 1) * px_bytes], order, bpc);
             // Composite over black, as the original's opaque frames are.

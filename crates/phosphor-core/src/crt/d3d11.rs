@@ -19,6 +19,7 @@ use crate::howlaround::{CameraSetup, Rgba8};
 use crate::Image;
 
 struct Gpu {
+    adapter: String,
     device: ID3D11Device,
     context: ID3D11DeviceContext,
     chains: HashMap<&'static str, FilterChain>,
@@ -61,6 +62,23 @@ fn create_device(driver: D3D_DRIVER_TYPE) -> windows::core::Result<(ID3D11Device
     Ok((device.unwrap(), context.unwrap()))
 }
 
+/// The graphics card's name, as Windows reports it.
+fn adapter_name(device: &ID3D11Device) -> String {
+    use windows::core::Interface;
+    use windows::Win32::Graphics::Dxgi::IDXGIDevice;
+    unsafe {
+        device
+            .cast::<IDXGIDevice>()
+            .and_then(|d| d.GetAdapter())
+            .and_then(|a| a.GetDesc())
+            .map(|d| {
+                let n = d.Description.iter().position(|&c| c == 0).unwrap_or(d.Description.len());
+                String::from_utf16_lossy(&d.Description[..n])
+            })
+            .unwrap_or_else(|_| "unknown".into())
+    }
+}
+
 fn texture_desc(width: u32, height: u32, bind: D3D11_BIND_FLAG) -> D3D11_TEXTURE2D_DESC {
     D3D11_TEXTURE2D_DESC {
         Width: width,
@@ -88,11 +106,26 @@ impl CrtRenderer {
         &self.shaders_root
     }
 
+    /// The graphics card in use, once the GPU has been started (`None` before the first GPU frame).
+    pub fn adapter(&self) -> Option<String> {
+        self.gpu.lock().ok()?.as_ref().map(|g| g.adapter.clone())
+    }
+
     fn gpu(slot: &mut Option<Gpu>) -> Result<&mut Gpu, Error> {
         if slot.is_none() {
-            let (device, context) =
-                create_device(D3D_DRIVER_TYPE_HARDWARE).or_else(|_| create_device(D3D_DRIVER_TYPE_WARP))?;
+            let (device, context, warp) = match create_device(D3D_DRIVER_TYPE_HARDWARE) {
+                Ok((d, c)) => (d, c, false),
+                Err(_) => {
+                    let (d, c) = create_device(D3D_DRIVER_TYPE_WARP)?;
+                    (d, c, true)
+                }
+            };
+            let mut adapter = adapter_name(&device);
+            if warp {
+                adapter.push_str(" (software fallback)");
+            }
             *slot = Some(Gpu {
+                adapter,
                 device,
                 context,
                 chains: HashMap::new(),
