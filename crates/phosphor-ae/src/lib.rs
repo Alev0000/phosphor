@@ -109,6 +109,18 @@ struct InstanceState {
     glitch: Mutex<History<GlitchSettings>>,
     digital: Mutex<History<DigitalSettings>>,
     screen_loop: Mutex<LoopCache>,
+    /// When a render last used it (seconds since Phosphor loaded), to free the idle ones.
+    last_used: std::sync::atomic::AtomicU64,
+}
+
+/// After Effects keeps the render-side copy of an effect for as long as it likes and never says
+/// when one is gone (deleted, project closed): free the caches of copies that haven't rendered in
+/// this long (a copy still in use only rebuilds its caches).
+const IDLE_STATE_SECS: u64 = 10 * 60;
+
+fn uptime_secs() -> u64 {
+    static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+    START.get_or_init(std::time::Instant::now).elapsed().as_secs()
 }
 
 struct Plugin {
@@ -161,10 +173,20 @@ mod log {
         }
     }
 
+    /// The log keeps the last few MB: past this, it moves to phosphor-ae.old.log and starts over.
+    const MAX_BYTES: u64 = 4 << 20;
+
     fn write(f: &mut Option<std::fs::File>, msg: std::fmt::Arguments) {
+        let path = std::env::temp_dir().join("phosphor-ae.log");
+        if f.as_ref().and_then(|file| file.metadata().ok()).is_some_and(|m| m.len() > MAX_BYTES) {
+            *f = None;
+            let _ = std::fs::rename(&path, path.with_file_name("phosphor-ae.old.log"));
+        }
         if f.is_none() {
-            let path = std::env::temp_dir().join("phosphor-ae.log");
-            *f = std::fs::OpenOptions::new().create(true).append(true).open(path).ok();
+            if std::fs::metadata(&path).is_ok_and(|m| m.len() > MAX_BYTES) {
+                let _ = std::fs::rename(&path, path.with_file_name("phosphor-ae.old.log"));
+            }
+            *f = std::fs::OpenOptions::new().create(true).append(true).open(&path).ok();
         }
         if let Some(file) = f.as_mut() {
             let t = std::time::SystemTime::now()
@@ -698,19 +720,26 @@ type AnyError = Box<dyn std::error::Error>;
 
 impl Plugin {
     fn state(&self, id: u64) -> Arc<InstanceState> {
-        self.instances
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .entry(id)
-            .or_insert_with(|| {
-                Arc::new(InstanceState {
-                    pipeline: Pipeline::new(&self.shaders_root),
-                    glitch: Mutex::new(History::default()),
-                    digital: Mutex::new(History::default()),
-                    screen_loop: Mutex::new(LoopCache::default()),
-                })
-            })
-            .clone()
+        use std::sync::atomic::Ordering::Relaxed;
+        let now = uptime_secs();
+        let mut instances = self.instances.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(state) = instances.get(&id) {
+            state.last_used.store(now, Relaxed);
+            return state.clone();
+        }
+        // A new copy: a good moment to let go of the ones nothing has rendered in a while.
+        let before = instances.len();
+        instances.retain(|_, s| Arc::strong_count(s) > 1 || now.saturating_sub(s.last_used.load(Relaxed)) < IDLE_STATE_SECS);
+        let state = Arc::new(InstanceState {
+            pipeline: Pipeline::new(&self.shaders_root),
+            glitch: Mutex::new(History::default()),
+            digital: Mutex::new(History::default()),
+            screen_loop: Mutex::new(LoopCache::default()),
+            last_used: std::sync::atomic::AtomicU64::new(now),
+        });
+        instances.insert(id, state.clone());
+        log::args(format_args!("effect copies in memory: {} (freed {} idle)", instances.len(), before + 1 - instances.len()));
+        state
     }
 
     fn selected_preset(params: &Parameters<ParamID>) -> Result<(usize, &'static CrtPreset), Error> {

@@ -11,7 +11,7 @@ license:
   - MIT
   - ISC
   - Apache-2.0
-version: "0.1.3"
+version: "0.1.4"
 date-released: "2026-11-12"
 references:
   - type: software

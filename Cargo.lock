@@ -4362,7 +4362,7 @@ dependencies = [
 
 [[package]]
 name = "phosphor-ae"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "after-effects",
  "ntsc-rs",

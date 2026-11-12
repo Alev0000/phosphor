@@ -41,6 +41,7 @@ struct Cache {
 }
 
 const RECENT: usize = 4;
+const MAX_CHECKPOINTS: usize = 1800;
 
 /// Renders the glitch stage for any frame, in any order, deterministically: the frame at time t
 /// is what a set switched on 2 s before time zero shows after playing the history up to t.
@@ -90,7 +91,12 @@ impl GlitchRenderer {
         }
 
         let resume = {
-            let mut guard = self.cache.lock().unwrap();
+            let mut guard = self.cache.lock().unwrap_or_else(|p| {
+                // A render that panicked may have left the cache half-written: start it over.
+                let mut g = p.into_inner();
+                *g = None;
+                g
+            });
             let valid = matches!(&*guard, Some(c) if c.raster == raster && c.frame_duration == frame_duration);
             if !valid {
                 *guard = Some(Cache {
@@ -142,7 +148,12 @@ impl GlitchRenderer {
         }
 
         {
-            let mut guard = self.cache.lock().unwrap();
+            let mut guard = self.cache.lock().unwrap_or_else(|p| {
+                // A render that panicked may have left the cache half-written: start it over.
+                let mut g = p.into_inner();
+                *g = None;
+                g
+            });
             if let Some(cache) = guard.as_mut() {
                 if cache.raster == raster && cache.frame_duration == frame_duration {
                     if !cache.recent.iter().any(|e| e.frame == frame && e.history == hashes[frame as usize]) {
@@ -151,6 +162,10 @@ impl GlitchRenderer {
                             cache.recent.remove(0);
                         }
                     }
+                    // Checkpoints from a history that no longer holds (the settings were edited since)
+                    // can't be resumed from up to this frame: drop them, or every edit would leave a
+                    // second's worth of snapshots per second of timeline behind.
+                    cache.checkpoints.retain(|c| c.frame > frame || hashes[c.frame as usize] == c.history);
                     for c in new_checkpoints {
                         if !cache
                             .checkpoints
@@ -161,6 +176,11 @@ impl GlitchRenderer {
                         }
                     }
                     cache.checkpoints.sort_by_key(|c| c.frame);
+                    // About 40 KB each: keep at most half an hour of 1 s checkpoints, dropping the oldest.
+                    if cache.checkpoints.len() > MAX_CHECKPOINTS {
+                        let excess = cache.checkpoints.len() - MAX_CHECKPOINTS;
+                        cache.checkpoints.drain(..excess);
+                    }
                 }
             }
         }
@@ -192,6 +212,24 @@ mod tests {
         let r = GlitchRenderer::new();
         let out = r.render(&img, 45, 1.0 / 30.0, &|_| GlitchSettings::default());
         assert_eq!(out.pixels, img.pixels);
+    }
+
+    /// Editing the settings again and again doesn't pile up checkpoints of the old histories, and
+    /// what's kept still gives exactly a fresh renderer's picture.
+    #[test]
+    fn edits_dont_pile_up_checkpoints() {
+        let img = gradient(64, 48);
+        let r = GlitchRenderer::new();
+        let mut s = GlitchSettings::default();
+        for edit in 0..20 {
+            s.set("vertical_hold", 0.1 + 0.03 * edit as f64);
+            r.render(&img, 150, 1.0 / 30.0, &|_| s.clone());
+        }
+        let n = r.cache.lock().unwrap().as_ref().unwrap().checkpoints.len();
+        assert!(n <= 5, "{n} checkpoints after 20 edits of a 5 s history");
+        let again = r.render(&img, 150, 1.0 / 30.0, &|_| s.clone());
+        let fresh = GlitchRenderer::new().render(&img, 150, 1.0 / 30.0, &|_| s.clone());
+        assert_eq!(again.pixels, fresh.pixels);
     }
 
     #[test]

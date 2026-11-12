@@ -164,6 +164,15 @@ impl DigitalRenderer {
         }
     }
 
+    /// The store, emptied if a render panicked while holding it (it may be half-written).
+    fn lock_store(&self) -> std::sync::MutexGuard<'_, Store> {
+        self.store.lock().unwrap_or_else(|p| {
+            let mut g = p.into_inner();
+            *g = Store::default();
+            g
+        })
+    }
+
     fn settings_for(req: &DigitalRequest, timing: &DigitalTiming, structure: &DigitalSettings, c: i64) -> DigitalSettings {
         (req.settings_at)(timing.frame_of_capture(c)).holding_structure(structure)
     }
@@ -194,7 +203,7 @@ impl DigitalRenderer {
             hashes.push(h);
         }
 
-        let store = self.store.lock().unwrap();
+        let store = self.lock_store();
         let g = timing.keyframe_every;
 
         // The earliest capture that must be coded, and any checkpoint to start from.
@@ -318,7 +327,7 @@ impl DigitalRenderer {
                 }
             }
 
-            let mut store = self.store.lock().unwrap();
+            let mut store = self.lock_store();
             for (k, st, sh) in new_checkpoints {
                 let history = plan.hashes[k as usize];
                 if store

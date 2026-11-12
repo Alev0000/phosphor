@@ -6,7 +6,7 @@ fn main() {
 
         const EFFECT_VERSION_MAJOR: u32 = 0;
         const EFFECT_VERSION_MINOR: u32 = 1;
-        const EFFECT_VERSION_PATCH: u32 = 3;
+        const EFFECT_VERSION_PATCH: u32 = 4;
         use pipl::*;
         pipl::plugin_build(vec![
             Property::Kind(PIPLType::AEEffect),

@@ -1,6 +1,6 @@
 [package]
 name = "phosphor-ae"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["alev"]
 license = "MIT OR ISC OR Apache-2.0"

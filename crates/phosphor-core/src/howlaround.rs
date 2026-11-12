@@ -588,7 +588,8 @@ impl HowlLoop {
     pub fn new(settings: &HowlSettings, chain_size: (usize, usize)) -> Self {
         let (w, h) = (chain_size.0.max(1), chain_size.1.max(1));
         let mut k = 2usize.max(2 * (640.0 / w as f64).ceil() as usize);
-        while k > 1 && w * k > 2048 {
+        // Very tall pictures would pass Direct3D's 16384-pixel limit: cap the height too.
+        while k > 1 && (w * k > 2048 || h * k > 8192) {
             k -= 1;
         }
         let feedback_size = (w * k, h * k);
