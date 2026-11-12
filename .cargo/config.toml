@@ -4,3 +4,9 @@ xtask = "run --package xtask --"
 [target.wasm32-wasip1]
 runner = "wasmtime"
 rustflags = ["-Ctarget-feature=+simd128,+relaxed-simd"]
+
+# Link the C/C++ runtime into the binaries. Phosphor's shader compiler is C++ and calls std::mutex;
+# built with a recent MSVC, that crashes when the host process has an older MSVCP140.dll loaded
+# (older After Effects installs can have one). Static linking makes the plugin independent of it.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-Ctarget-feature=+crt-static"]
