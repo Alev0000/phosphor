@@ -1,5 +1,6 @@
 #![cfg(windows)]
 
+mod aegp_compat;
 mod keyframes;
 mod ntsc_params;
 mod pixels;
@@ -1180,13 +1181,11 @@ impl Plugin {
     fn set_hidden(&self, in_data: &InData, params: &Parameters<ParamID>, ids: &[ParamID], hidden: bool) {
         let Some(plugin_id) = self.aegp_id else { return };
         let run = || -> Result<(), Error> {
-            let effect = ae::aegp::suites::PFInterface::new()?.new_effect_for_effect(in_data.effect_ref(), plugin_id)?;
-            let streams = ae::aegp::suites::Stream::new()?;
-            let dynamic = ae::aegp::suites::DynamicStream::new()?;
+            let effect = aegp_compat::Effect::new(in_data, plugin_id)?;
+            let dynamic = aegp_compat::Dynamic::new(in_data)?;
             for id in ids {
                 let Some(index) = params.index(*id) else { continue };
-                let stream = streams.new_effect_stream_by_index(&effect, plugin_id, index as i32)?;
-                dynamic.set_dynamic_stream_flag(&stream, ae::aegp::DynamicStreamFlags::Hidden, false, hidden)?;
+                dynamic.set_hidden(&effect.stream(index as i32)?, hidden)?;
             }
             Ok(())
         };

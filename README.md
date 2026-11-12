@@ -60,8 +60,8 @@ After Effects keyframes. Look files open in both Phosphor and NTSCRT.
 
 ## Install
 
-You need Windows 10 or 11 (64-bit) and After Effects. Tested on After Effects 2026. 0.1.2 fixes a
-crash reported on After Effects 2024 when it opened (see [Crashes](#good-to-know)).
+You need Windows 10 or 11 (64-bit) and After Effects 2020 or newer. Tested on After Effects 2026;
+older versions are supported by design but not yet tested. Problems? See [Crashes](#good-to-know).
 
 1. **[Download the latest `Phosphor-…-windows.zip`](https://github.com/Alev0000/phosphor/releases/latest)** and unzip it.
 2. Close After Effects.

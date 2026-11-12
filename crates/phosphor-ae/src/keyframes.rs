@@ -6,6 +6,8 @@
 //! at speed 0 on both ends (the same midpoint slope).
 
 use after_effects::{self as ae, aegp, Error, InData, Parameters};
+
+use crate::aegp_compat::{Effect, Interp, Keys};
 use phosphor_core::look::Easing;
 
 use crate::{ControlValue, ParamID};
@@ -16,21 +18,16 @@ pub struct Track {
     pub values: Vec<ControlValue>,
 }
 
-fn effect(in_data: &InData, plugin_id: aegp::PluginId) -> Result<aegp::EffectRefHandle, Error> {
-    aegp::suites::PFInterface::new()?.new_effect_for_effect(in_data.effect_ref(), plugin_id)
-}
-
 /// Remove every keyframe from `ids` (a newly applied look replaces the old look's animation).
 pub fn clear(in_data: &InData, params: &Parameters<ParamID>, plugin_id: aegp::PluginId, ids: &[ParamID]) -> Result<(), Error> {
-    let effect = effect(in_data, plugin_id)?;
-    let streams = aegp::suites::Stream::new()?;
-    let keys = aegp::suites::Keyframe::new()?;
+    let effect = Effect::new(in_data, plugin_id)?;
+    let keys = Keys::new(in_data)?;
     for id in ids {
         let Some(index) = params.index(*id) else { continue };
-        let Ok(stream) = streams.new_effect_stream_by_index(&effect, plugin_id, index as i32) else { continue };
-        let n = keys.stream_num_kfs(&stream).unwrap_or(0);
+        let Ok(stream) = effect.stream(index as i32) else { continue };
+        let n = keys.count(&stream).unwrap_or(0);
         for k in (0..n).rev() {
-            let _ = keys.delete_keyframe(&stream, k);
+            let _ = keys.delete(&stream, k);
         }
     }
     Ok(())
@@ -57,53 +54,47 @@ pub fn write(
     easings: &[Easing],
     tracks: &[Track],
 ) -> Result<(), Error> {
-    let effect = effect(in_data, plugin_id)?;
-    let streams = aegp::suites::Stream::new()?;
-    let keys = aegp::suites::Keyframe::new()?;
+    let effect = Effect::new(in_data, plugin_id)?;
+    let keys = Keys::new(in_data)?;
     let scale = in_data.time_scale().max(1);
     let one_third = 100.0 / 3.0;
+    let key_times: Vec<i32> = times.iter().map(|t| (t * scale as f64).round() as i32).collect();
 
     for track in tracks {
         let Some(index) = params.index(track.id) else { continue };
-        let stream = streams.new_effect_stream_by_index(&effect, plugin_id, index as i32)?;
-        {
-            let mut add = keys.start_add_keyframes(&stream)?;
-            for (t, v) in times.iter().zip(&track.values) {
-                let time = ae::Time { value: (t * scale as f64).round() as i32, scale };
-                let i = add.add_keyframes(aegp::TimeMode::LayerTime, time)?;
-                add.set_add_keyframe(i, &stream, aegp::StreamValue::OneD(number(v)))?;
-            }
-        }
+        let stream = effect.stream(index as i32)?;
+        let values: Vec<f64> = track.values.iter().map(number).collect();
+        keys.add(&stream, &key_times, scale, &values)?;
         // Checkboxes and menus hold between keyframes by themselves.
-        if keys.stream_num_kfs(&stream)? as usize != times.len() || !matches!(track.values.first(), Some(ControlValue::Slider(_))) {
+        if keys.count(&stream)? as usize != times.len() || !matches!(track.values.first(), Some(ControlValue::Slider(_))) {
             continue;
         }
         let avg = |a: usize, b: usize| (number(&track.values[b]) - number(&track.values[a])) / (times[b] - times[a]).max(1e-6);
         for k in 0..times.len() {
             let (in_interp, in_ease) = match k.checked_sub(1) {
                 Some(p) => match easings[p] {
-                    Easing::EaseIn => (aegp::KeyframeInterpolation::Bezier, ease(2.0 * avg(p, k), one_third)),
-                    Easing::EaseOut => (aegp::KeyframeInterpolation::Bezier, ease(0.0, one_third)),
-                    Easing::EaseInOut => (aegp::KeyframeInterpolation::Bezier, ease(0.0, 50.0)),
-                    Easing::Linear | Easing::Hold => (aegp::KeyframeInterpolation::Linear, ease(avg(p, k), one_third)),
+                    Easing::EaseIn => (Interp::Bezier, ease(2.0 * avg(p, k), one_third)),
+                    Easing::EaseOut => (Interp::Bezier, ease(0.0, one_third)),
+                    Easing::EaseInOut => (Interp::Bezier, ease(0.0, 50.0)),
+                    Easing::Linear | Easing::Hold => (Interp::Linear, ease(avg(p, k), one_third)),
                 },
-                None => (aegp::KeyframeInterpolation::Linear, ease(0.0, one_third)),
+                None => (Interp::Linear, ease(0.0, one_third)),
             };
             let (out_interp, out_ease) = if k + 1 < times.len() {
                 match easings[k] {
-                    Easing::EaseIn => (aegp::KeyframeInterpolation::Bezier, ease(0.0, one_third)),
-                    Easing::EaseOut => (aegp::KeyframeInterpolation::Bezier, ease(2.0 * avg(k, k + 1), one_third)),
-                    Easing::EaseInOut => (aegp::KeyframeInterpolation::Bezier, ease(0.0, 50.0)),
-                    Easing::Linear => (aegp::KeyframeInterpolation::Linear, ease(avg(k, k + 1), one_third)),
-                    Easing::Hold => (aegp::KeyframeInterpolation::Hold, ease(0.0, one_third)),
+                    Easing::EaseIn => (Interp::Bezier, ease(0.0, one_third)),
+                    Easing::EaseOut => (Interp::Bezier, ease(2.0 * avg(k, k + 1), one_third)),
+                    Easing::EaseInOut => (Interp::Bezier, ease(0.0, 50.0)),
+                    Easing::Linear => (Interp::Linear, ease(avg(k, k + 1), one_third)),
+                    Easing::Hold => (Interp::Hold, ease(0.0, one_third)),
                 }
             } else {
-                (aegp::KeyframeInterpolation::Linear, ease(0.0, one_third))
+                (Interp::Linear, ease(0.0, one_third))
             };
             let idx = k as i32;
-            let _ = keys.set_keyframe_interpolation(&stream, idx, in_interp, out_interp);
-            if in_interp == aegp::KeyframeInterpolation::Bezier || out_interp == aegp::KeyframeInterpolation::Bezier {
-                let _ = keys.set_keyframe_temporal_ease(&stream, idx, 0, &in_ease, &out_ease);
+            let _ = keys.set_interpolation(&stream, idx, in_interp, out_interp);
+            if in_interp == Interp::Bezier || out_interp == Interp::Bezier {
+                let _ = keys.set_temporal_ease(&stream, idx, &in_ease, &out_ease);
             }
         }
     }

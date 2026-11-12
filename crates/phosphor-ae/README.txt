@@ -8,7 +8,8 @@ https://github.com/Alev0000/phosphor
 INSTALL
 -------
 
-You need Windows 10/11 (64-bit) and After Effects (tested on 2026).
+You need Windows 10/11 (64-bit) and After Effects 2020 or newer
+(tested on 2026).
 
 1. Close After Effects.
 2. Copy the whole "Phosphor" folder (not just Phosphor.aex) into:
